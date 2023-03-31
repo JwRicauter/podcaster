@@ -30,56 +30,89 @@ export const Home = ( ) => {
 	const { loader, setLoader } = useOutletContext<{loader: boolean, setLoader: React.Dispatch<React.SetStateAction<boolean>>}>();
 
 
-		/* Use effect that gather all podcast info from api or cache */
-		useEffect(() => {
+	/* Use effect that gather all podcast info from api or cache */
+	useEffect(() => {
 
-			/* init variables */
-			setLoader(true);
-			setData([]);
+		/* init variables */
+		setLoader(true);
+		setData([]);
 
-			const cachedData = localStorage.getItem('podcasts');
-			let makeACall = true;
-			if (cachedData) {
+		const cachedData = localStorage.getItem('podcasts');
+		let makeACall = true;
+		if (cachedData) {
 
-				const parsedData = JSON.parse(cachedData);
-				const lastUpdate = new Date(parsedData.lastFetchDate);
-				const diff = Date.now() - lastUpdate.getTime();
-        const diffDays = diff / (1000 * 60 * 60 * 24);
+			const parsedData = JSON.parse(cachedData);
+			const lastUpdate = new Date(parsedData.lastFetchDate);
+			const diff = Date.now() - lastUpdate.getTime();
+			const diffDays = diff / (1000 * 60 * 60 * 24);
 
-				// check if the data is expired
-				const isExpired = diffDays > 1
-				if (!isExpired) {
-					makeACall = false;
-					setData(parsedData.data);
+			// check if the data is expired
+			const isExpired = diffDays > 1
+			if (!isExpired) {
+				makeACall = false;
+				setData(parsedData.data);
+				setLoader(false);
+			} 
+		}
+
+		if (makeACall) {
+			/* api call */
+			const controller = new AbortController();
+			const signal = controller.signal;
+			getPodcasts(signal).then(res => {
+				if ( res.feed ) {
+					setData(res.feed.entry);
+					const stringifiedData = JSON.stringify({
+						data: res.feed.entry,
+						lastFetchDate: Date.now(),
+					});
+
+					localStorage.setItem('podcasts', stringifiedData);
 					setLoader(false);
-				} 
-			}
+				}
+			})
+			/* sanitize */
+			return () => {
+				controller.abort();
+			};
+		}
 
-			if (makeACall) {
-				/* api call */
-				const controller = new AbortController();
-				const signal = controller.signal;
-				getPodcasts(signal).then(res => {
-					if ( res.feed ) {
-						setData(res.feed.entry);
-						const stringifiedData = JSON.stringify({
-							data: res.feed.entry,
-							lastFetchDate: Date.now(),
-						});
+		
+		
+	}, [ ]);
 
-						localStorage.setItem('podcasts', stringifiedData);
-						setLoader(false);
+	/* Use effect that filter data by the title or author */ 
+	useEffect(() => {
+		setLoader(true);
+		setData([]);
+
+		const cachedData = localStorage.getItem('podcasts');
+		
+		if (cachedData) {
+
+			const parsedData = JSON.parse(cachedData);
+			if (searchString.length > 0) {
+				/* Filtering data by title or author */
+				let wholeData : any[] = parsedData.data
+				let newData = wholeData.filter(function( item ) {
+					if (
+						item['im:name']['label'].toLowerCase().includes(searchString.toLowerCase()) 
+						|| item['im:artist']['label'].toLowerCase().includes(searchString.toLowerCase())
+					) {
+						return item
 					}
-				})
-				/* sanitize */
-				return () => {
-					controller.abort();
-				};
+				 });
+				setData(newData)
+				setLoader(false);
+			} else {
+				/* If there are no search string, retrieve the data from localstorage */
+				setData(parsedData.data);
+				setLoader(false);
 			}
+		}
 
-			
-			
-		}, [ ]);
+		
+	}, [searchString]);
 
 
 	return(
