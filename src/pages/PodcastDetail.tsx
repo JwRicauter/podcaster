@@ -67,10 +67,8 @@ export const PodcastDetail = () => {
 						let content = JSON.parse(res.contents).results[0]
 						podcastDetail['artistName'] = content.artistName
 						podcastDetail['image'] = content.artworkUrl600 
-            console.log(content)
 						getEpisodes(content['feedUrl']).then( doc => {
 							let responseDoc = new DOMParser().parseFromString(doc, 'application/xml');
-              console.log(responseDoc);
 							podcastDetail['summary'] = responseDoc.getElementsByTagName('itunes:summary').item(0)?.innerHTML;
 							podcastDetail['title'] = responseDoc.getElementsByTagName('title').item(0)?.innerHTML;
 							podcastDetail['episodes'] = {}
@@ -80,21 +78,22 @@ export const PodcastDetail = () => {
               
               let counter = 1;
 							Array.from(episodes).forEach(episode => {
-                console.log(episode);
 								let episodeNo = episode.getElementsByTagName('itunes:episode').item(0)?.innerHTML
 								let seasonNo = episode.getElementsByTagName('itunes:season').item(0)?.innerHTML
                 let uid = counter;
 								if ( episodeNo != undefined && seasonNo != undefined ) {
 									let uid : string = seasonNo + episodeNo;
 								} else {
+                  seasonNo = '1';
+                  episodeNo = counter.toString();
                   counter = counter + 1;
                 }
                 podcastDetail['episodes'][uid] = {
                   'title': episode.getElementsByTagName('title').item(0)?.innerHTML,
                   'pubDate': episode.getElementsByTagName('pubDate').item(0)?.innerHTML,
                   'duration': episode.getElementsByTagName('itunes:duration').item(0)?.innerHTML,
-                  'episode': episode.getElementsByTagName('itunes:episode').item(0)?.innerHTML,
-                  'season': episode.getElementsByTagName('itunes:season').item(0)?.innerHTML,
+                  'episode': episodeNo,
+                  'season': seasonNo,
                   'description': episode.getElementsByTagName('description').item(0)?.innerHTML,
                   'audioUrl': episode.getElementsByTagName('enclosure').item(0)?.getAttribute('url')
                 }
@@ -102,7 +101,6 @@ export const PodcastDetail = () => {
 							});
 							
 							setDetailData(podcastDetail);
-              console.log(podcastDetail)
               const stringifiedData = JSON.stringify({
                 data: podcastDetail,
                 lastFetchDate: Date.now(),
