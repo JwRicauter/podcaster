@@ -99,7 +99,30 @@ export const Home = ( ) => {
 					</Row>
 
 					<Row className='mt-5 pt-5'>
-
+						{
+							data.length > 0 && data.map((item, index) => {
+								return(
+									<Col sm={12} md={6} lg={3} key={index}>
+										<Link className='text-decoration-none text-dark' to={`/podcast/${item['id']['attributes']['im:id']}`}>
+											<Card style={{ width: '18rem', height: '15rem' }} className='mx-auto shadow-lg my-5'>
+												<Card.Img 
+													variant="top" 
+													src={item['im:image'][2]['label']} 
+													className='rounded-circle w-50 mx-auto'
+													style={{marginTop: '-20%'}}
+												/>
+												<Card.Body>
+													<Card.Title className='text-center'>{item['im:name']['label']} </Card.Title>
+													<Card.Text className='text-center'>
+														Author: {item['im:artist']['label']}
+													</Card.Text>
+												</Card.Body>
+											</Card>
+										</Link>
+									</Col>
+								)
+							})
+						}
 					</Row>
 
 
