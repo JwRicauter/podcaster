@@ -13,7 +13,8 @@ import Form from 'react-bootstrap/Form';
 import Badge from 'react-bootstrap/Badge';
 import Card from 'react-bootstrap/Card';
 
-
+/* services */
+import { getPodcasts } from '../services/api';
 
 
 
@@ -28,6 +29,57 @@ export const Home = ( ) => {
 	/* Boolean that indicates if the podcast is loading */
 	const { loader, setLoader } = useOutletContext<{loader: boolean, setLoader: React.Dispatch<React.SetStateAction<boolean>>}>();
 
+
+		/* Use effect that gather all podcast info from api or cache */
+		useEffect(() => {
+
+			/* init variables */
+			setLoader(true);
+			setData([]);
+
+			const cachedData = localStorage.getItem('podcasts');
+			let makeACall = true;
+			if (cachedData) {
+
+				const parsedData = JSON.parse(cachedData);
+				const lastUpdate = new Date(parsedData.lastFetchDate);
+				const diff = Date.now() - lastUpdate.getTime();
+        const diffDays = diff / (1000 * 60 * 60 * 24);
+
+				// check if the data is expired
+				const isExpired = diffDays > 1
+				if (!isExpired) {
+					makeACall = false;
+					setData(parsedData.data);
+					setLoader(false);
+				} 
+			}
+
+			if (makeACall) {
+				/* api call */
+				const controller = new AbortController();
+				const signal = controller.signal;
+				getPodcasts(signal).then(res => {
+					if ( res.feed ) {
+						setData(res.feed.entry);
+						const stringifiedData = JSON.stringify({
+							data: res.feed.entry,
+							lastFetchDate: Date.now(),
+						});
+
+						localStorage.setItem('podcasts', stringifiedData);
+						setLoader(false);
+					}
+				})
+				/* sanitize */
+				return () => {
+					controller.abort();
+				};
+			}
+
+			
+			
+		}, [ ]);
 
 
 	return(
