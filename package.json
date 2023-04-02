@@ -44,5 +44,9 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/react-html-parser": "^2.0.2",
+    "buffer": "^6.0.3"
   }
 }

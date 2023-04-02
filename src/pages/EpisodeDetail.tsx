@@ -3,10 +3,6 @@ import { useState, useEffect } from "react"
 
 /* react-router */
 import { useOutletContext, useParams } from 'react-router';
-import { Link } from "react-router-dom";
-
-/* services */
-import { getDetail, getEpisodes } from "../services/api";
 
 /* components */
 import { PodcastCard } from "../components/PodcastCard";
@@ -16,28 +12,26 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Card from 'react-bootstrap/Card';
-import Table from 'react-bootstrap/Table';
+
+/* services */
+import { getDetail, getEpisodes } from "../services/api";
 
 
+export const EpisodeDetail = ( ) => {
 
+    /* podcast and episode ids */
+    const { podcastId, episodeId } = useParams();
+    /* detail data of the podcast */
+    const [detailData, setDetailData] = useState<any>({});
 
-
-export const PodcastDetail = () => {
-
-		/* detail data of the podcast */
-		const [detailData, setDetailData] = useState<any>({});
-		/* Boolean that indicates if the podcast is loading */
+    /* Boolean that indicates if the podcast is loading */
 		const { loader, setLoader } = useOutletContext<{loader: boolean, setLoader: React.Dispatch<React.SetStateAction<boolean>>}>();
-		
-		/* podcast id */
-		const { id } = useParams();
-
 
 		useEffect(() => {
 			setLoader(true);
 			setDetailData([]);
-      let podcastId : string = (id as string)
-      const cachedData = localStorage.getItem(podcastId);
+      let podcastId_ : string = (podcastId as string)
+      const cachedData = localStorage.getItem(podcastId_);
 			let makeACall = true;
 			if (cachedData) {
 
@@ -61,7 +55,7 @@ export const PodcastDetail = () => {
 				const signal = controller.signal;
 				
         let podcastDetail : any = {}
-				getDetail(signal, podcastId).then(res => {
+				getDetail(signal, podcastId_).then(res => {
 					if (res.contents) {
 						let content = JSON.parse(res.contents).results[0]
 						podcastDetail['artistName'] = content.artistName
@@ -75,7 +69,7 @@ export const PodcastDetail = () => {
 							let episodes = responseDoc.getElementsByTagName('item');
 							podcastDetail['episodesNo'] = episodes.length
               
-              let counter = episodes.length;
+              let counter = 1;
 							Array.from(episodes).forEach(episode => {
 								let episodeNo = episode.getElementsByTagName('itunes:episode').item(0)?.innerHTML
 								let seasonNo = episode.getElementsByTagName('itunes:season').item(0)?.innerHTML
@@ -85,7 +79,7 @@ export const PodcastDetail = () => {
 								} else {
                   seasonNo = '1';
                   episodeNo = counter.toString();
-                  counter = counter - 1;
+                  counter = counter + 1;
                 }
                 podcastDetail['episodes'][uid] = {
                   'title': episode.getElementsByTagName('title').item(0)?.innerHTML,
@@ -105,7 +99,7 @@ export const PodcastDetail = () => {
                 lastFetchDate: Date.now(),
               });
   
-              localStorage.setItem(podcastId, stringifiedData);
+              localStorage.setItem(podcastId_, stringifiedData);
 
 							setLoader(false);
 	
@@ -114,71 +108,54 @@ export const PodcastDetail = () => {
         })
 
       }
+      
 	
-		}, [id]);
+		}, [podcastId]);
+    
+    useEffect(() => {
 
+      console.log(episodeId)
+      episodeId && detailData.episodes && console.log(detailData.episodes[episodeId])
+	
+		}, [detailData]);
 
-		const fmtMSS = (s: number) => { return(s-(s%=60))/60+(9<s?':':':0')+s }
+    return(					
+      <Container fluid>
+        <Row className='mt-5'>
+          <Col sm={12} md={12} lg={4}>
+            {
+              podcastId && episodeId && <PodcastCard 	
+                image = {detailData.image}
+                title = {detailData.title}
+                artistName = {detailData.artistName}
+                summary = {detailData.summary}
+                id={(podcastId as string)}
+              />
+            }
 
-    return (
-        <>
-					<Container fluid>
-						<Row className='mt-5'>
-							<Col sm={12} md={12} lg={4}>
-								<PodcastCard 	
-									image = {detailData.image}
-									title = {detailData.title}
-									artistName = {detailData.artistName}
-									summary = {detailData.summary}
-									id={(id as string)}
-								/>
-							</Col>
-							<Col sm={12} md={12} lg={7}>
-								<Card className='shadow-lg'>
-									<Card.Title className='px-4 py-2 mb-0'>Episodes: { detailData.episodes ? Object.keys(detailData.episodes).length : 0}</Card.Title>
-								</Card>
+          </Col>
+          <Col sm={12} md={12} lg={7}>
+            {
+              podcastId && episodeId && detailData.episodes &&
+              <Card className='mx-auto shadow-lg p-4'>
+                <Card.Title>
+                  <h2>{  detailData['episodes'][episodeId].title }</h2>
+                </Card.Title>
+                <Card.Body>
+                <div dangerouslySetInnerHTML={{ __html: detailData['episodes'][episodeId].description }} />
 
-								<Card className='shadow-lg p-4 mt-3'>
-									<Table striped hover className=''>
-										<thead>
-											<tr>
-												<th>Title</th>
-												<th>Date</th>
-												<th>Duration</th>
-											</tr>
-										</thead>
-										<tbody>
-											{
-												
-											}
-											{
-												detailData.episodes && Object.keys(detailData.episodes).length > 0 && 
-												Object.keys(detailData.episodes).map((episodeId: any, index: number) => {
-                          let duration = detailData.episodes[episodeId].duration
-                          if (duration && duration.split(':').length == 1) { duration = fmtMSS(duration)}
-													
-													
-													return (
-														<tr key={index}>
-															<td>
-																<Link className='text-decoration-none' to={`/podcast/${id}/episode/${episodeId}`}>
-																	{detailData.episodes[episodeId].title}
-																</Link>	
-															</td>
-															<td>{detailData.episodes[episodeId].pubDate}</td>
-															<td>{ duration }</td>
-														</tr>
-													)
-												})
-											}
-										</tbody>
-									</Table>
-								</Card>
+                  
+                </Card.Body>
+                <Card.Body>
 
-							</Col>
-						</Row>
+                  <audio src={detailData['episodes'][episodeId].audioUrl} className='w-100 text-dark' controls />
+                </Card.Body>
+              </Card>
+            
+            }
 
-					</Container>
-        </>
+          </Col>
+        </Row>
+      </Container>
     )
 }
