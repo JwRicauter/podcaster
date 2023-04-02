@@ -111,13 +111,7 @@ export const EpisodeDetail = ( ) => {
       
 	
 		}, [podcastId]);
-    
-    useEffect(() => {
 
-      console.log(episodeId)
-      episodeId && detailData.episodes && console.log(detailData.episodes[episodeId])
-	
-		}, [detailData]);
 
     return(					
       <Container fluid>
